@@ -107,6 +107,21 @@ def normalize_label(label):
 
     return label_map[normalized_key]
 
+def extract_size_from_pattern_key(pattern_key):
+    key_parts = pattern_key.split("_")
+
+    is_invalid = (
+        len(key_parts) != 3
+        or key_parts[0] != "size"
+        or not key_parts[1].isdigit()
+        or not key_parts[2].isdigit()
+    )
+
+    if is_invalid:
+        raise ValueError(f"잘못된 패턴 키 형식: {pattern_key}")
+
+    return int(key_parts[1])
+
 def run_json_analysis_mode():
     print("=== data.json 분석 모드 ===")
 
@@ -117,6 +132,15 @@ def run_json_analysis_mode():
     print("data.json 로드 완료")
     print(f"필터 크기: {len(filters)}개")
     print(f"패턴: {len(patterns)}개")
+
+    for pattern_key, pattern_data in patterns.items():
+        size = extract_size_from_pattern_key(pattern_key)
+        expected = normalize_label(pattern_data["expected"])
+
+        print(
+            f"- {pattern_key}: {size}x{size}, "
+            f"expected={expected}"
+        )
 
 def main():
     while True:
@@ -149,6 +173,9 @@ assert normalize_label("+") == "Cross"
 assert normalize_label("cross") == "Cross"
 assert normalize_label("x") == "X"
 assert normalize_label(" X ") == "X"
+assert extract_size_from_pattern_key("size_5_1") == 5
+assert extract_size_from_pattern_key("size_13_2") == 13
+assert extract_size_from_pattern_key("size_25_1") == 25
 
 if __name__ == "__main__":
     main()
