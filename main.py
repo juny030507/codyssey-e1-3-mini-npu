@@ -93,6 +93,20 @@ def load_json_data(file_path):
     with open(file_path, "r", encoding="utf-8") as json_file:
         return json.load(json_file)
 
+def normalize_label(label):
+    label_map = {
+        "+": "Cross",
+        "cross": "Cross",
+        "x": "X"
+    }
+
+    normalized_key = label.strip().lower()
+
+    if normalized_key not in label_map:
+        raise ValueError(f"지원하지 않는 라벨: {label}")
+
+    return label_map[normalized_key]
+
 def run_json_analysis_mode():
     print("=== data.json 분석 모드 ===")
 
@@ -131,6 +145,10 @@ assert calculate_mac(cross_filter, x_filter) == 1
 assert determine_winner(5.0, 1.0) == "A"
 assert determine_winner(1.0, 5.0) == "B"
 assert determine_winner(0.9, 0.8999999999999999) == "판정 불가"
+assert normalize_label("+") == "Cross"
+assert normalize_label("cross") == "Cross"
+assert normalize_label("x") == "X"
+assert normalize_label(" X ") == "X"
 
 if __name__ == "__main__":
     main()
