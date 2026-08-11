@@ -148,9 +148,25 @@ def has_expected_size(matrix, expected_size):
 def run_json_analysis_mode():
     print("=== data.json 분석 모드 ===")
 
-    data = load_json_data("data.json")
-    filters = data["filters"]
-    patterns = data["patterns"]
+    try:
+        data = load_json_data("data.json")
+        filters = data["filters"]
+        patterns = data["patterns"]
+
+        if not isinstance(filters, dict) or not isinstance(patterns, dict):
+            raise TypeError("filters와 patterns는 객체여야 합니다.")
+
+    except FileNotFoundError:
+        print("JSON 오류: data.json 파일을 찾을 수 없습니다.")
+        return
+
+    except json.JSONDecodeError:
+        print("JSON 오류: data.json의 JSON 문법이 잘못되었습니다.")
+        return
+
+    except (KeyError, TypeError) as error:
+        print(f"JSON 오류: 필수 데이터 구조가 잘못되었습니다. ({error})")
+        return
 
     print("data.json 로드 완료")
     print(f"필터 크기: {len(filters)}개")
