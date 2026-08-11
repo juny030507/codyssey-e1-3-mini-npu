@@ -66,21 +66,31 @@ def determine_winner(score_a, score_b, epsilon=1e-9):
 
     return "B"
 
+def run_user_input_mode():
+    size = 3
+
+    print("=== 사용자 입력 모드 (3x3) ===")
+
+    filter_a = read_matrix("필터 A", size)
+    print("필터 A 저장 완료")
+
+    filter_b = read_matrix("필터 B", size)
+    print("필터 B 저장 완료")
+
+    pattern = read_matrix("패턴", size)
+
+    score_a = calculate_mac(pattern, filter_a)
+    score_b = calculate_mac(pattern, filter_b)
+    winner = determine_winner(score_a, score_b)
+
+    print(f"A 점수: {score_a}")
+    print(f"B 점수: {score_b}")
+    print(f"판정: {winner}")
+
 assert calculate_mac(cross_filter, cross_filter) == 5
 assert calculate_mac(cross_filter, x_filter) == 1
 assert determine_winner(5.0, 1.0) == "A"
 assert determine_winner(1.0, 5.0) == "B"
 assert determine_winner(0.9, 0.8999999999999999) == "판정 불가"
 
-filter_a = read_matrix("필터 A", 3)
-filter_b = read_matrix("필터 B", 3)
-pattern = read_matrix("패턴", 3)
-
-score_a = calculate_mac(pattern, filter_a)
-score_b = calculate_mac(pattern, filter_b)
-
-winner = determine_winner(score_a, score_b)
-
-print(f"A 점수: {score_a}")
-print(f"B 점수: {score_b}")
-print(f"판정: {winner}")
+run_user_input_mode()
