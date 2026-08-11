@@ -57,16 +57,23 @@ def read_matrix(name, size):
 
     return matrix
 
-def determine_winner(score_a, score_b, epsilon=1e-9):
+def determine_winner(
+    score_a,
+    score_b,
+    label_a="A",
+    label_b="B",
+    undecided_label="판정 불가",
+    epsilon=1e-9,
+):
     score_difference = abs(score_a - score_b)
 
     if score_difference < epsilon:
-        return "판정 불가"
+        return undecided_label
 
     if score_a > score_b:
-        return "A"
+        return label_a
 
-    return "B"
+    return label_b
 
 def run_user_input_mode():
     size = 3
@@ -161,8 +168,14 @@ def run_json_analysis_mode():
             continue
 
         pattern = pattern_data["input"]
-        cross_filter_matrix = selected_filters.get("cross")
-        x_filter_matrix = selected_filters.get("x")
+        normalized_filters = {}
+
+        for filter_label, filter_matrix in selected_filters.items():
+            standard_label = normalize_label(filter_label)
+            normalized_filters[standard_label] = filter_matrix
+
+        cross_filter_matrix = normalized_filters.get("Cross")
+        x_filter_matrix = normalized_filters.get("X")
 
         matrices_are_valid = (
             has_expected_size(pattern, size)
@@ -174,10 +187,26 @@ def run_json_analysis_mode():
             print(f"- {pattern_key}: FAIL - 필터 또는 패턴 크기 불일치")
             continue
 
-        print(
-            f"- {pattern_key}: {size}x{size}, "
-            f"expected={expected}, size-check=PASS"
+        cross_score = calculate_mac(pattern, cross_filter_matrix)
+        x_score = calculate_mac(pattern, x_filter_matrix)
+
+        prediction = determine_winner(
+            cross_score,
+            x_score,
+            label_a="Cross",
+            label_b="X",
+            undecided_label="UNDECIDED",
         )
+
+        if prediction == expected:
+            result = "PASS"
+        else:
+            result = "FAIL"
+
+        print(f"--- {pattern_key} ---")
+        print(f"Cross 점수: {cross_score}")
+        print(f"X 점수: {x_score}")
+        print(f"판정: {prediction} | expected: {expected} | {result}")
 
 def main():
     while True:
@@ -221,6 +250,20 @@ assert not has_expected_size(
     [[0, 1], [1]],
     2,
 )
+assert determine_winner(
+    5.0,
+    1.0,
+    label_a="Cross",
+    label_b="X",
+    undecided_label="UNDECIDED",
+) == "Cross"
+assert determine_winner(
+    0.9,
+    0.8999999999999999,
+    label_a="Cross",
+    label_b="X",
+    undecided_label="UNDECIDED",
+) == "UNDECIDED"
 
 if __name__ == "__main__":
     main()
