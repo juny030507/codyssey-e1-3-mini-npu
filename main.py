@@ -178,69 +178,84 @@ def run_json_analysis_mode():
     failure_cases = []
 
     for pattern_key, pattern_data in patterns.items():
-        size = extract_size_from_pattern_key(pattern_key)
-        expected = normalize_label(pattern_data["expected"])
+        try:
+            size = extract_size_from_pattern_key(pattern_key)
+            expected = normalize_label(pattern_data["expected"])
 
-        filter_size_key = f"size_{size}"
-        selected_filters = filters.get(filter_size_key)
+            filter_size_key = f"size_{size}"
+            selected_filters = filters.get(filter_size_key)
 
-        if selected_filters is None:
-            fail_count += 1
-            failure_cases.append(
-                f"{pattern_key}: 필터를 찾을 수 없음"
-            )
-            print(f"- {pattern_key}: FAIL - 필터를 찾을 수 없음")
-            continue
+            if selected_filters is None:
+                fail_count += 1
+                failure_cases.append(
+                    f"{pattern_key}: 필터를 찾을 수 없음"
+                )
+                print(f"- {pattern_key}: FAIL - 필터를 찾을 수 없음")
+                continue
 
-        pattern = pattern_data["input"]
-        normalized_filters = {}
+            if not isinstance(selected_filters, dict):
+                raise TypeError(
+                    f"{filter_size_key} 필터는 객체여야 합니다."
+                )
 
-        for filter_label, filter_matrix in selected_filters.items():
-            standard_label = normalize_label(filter_label)
-            normalized_filters[standard_label] = filter_matrix
+            pattern = pattern_data["input"]
+            normalized_filters = {}
 
-        cross_filter_matrix = normalized_filters.get("Cross")
-        x_filter_matrix = normalized_filters.get("X")
+            for filter_label, filter_matrix in selected_filters.items():
+                standard_label = normalize_label(filter_label)
+                normalized_filters[standard_label] = filter_matrix
 
-        matrices_are_valid = (
-            has_expected_size(pattern, size)
-            and has_expected_size(cross_filter_matrix, size)
-            and has_expected_size(x_filter_matrix, size)
-        )
+            cross_filter_matrix = normalized_filters.get("Cross")
+            x_filter_matrix = normalized_filters.get("X")
 
-        if not matrices_are_valid:
-            fail_count += 1
-            failure_cases.append(
-                f"{pattern_key}: 필터 또는 패턴 크기 불일치"
-            )
-            print(f"- {pattern_key}: FAIL - 필터 또는 패턴 크기 불일치")
-            continue
-
-        cross_score = calculate_mac(pattern, cross_filter_matrix)
-        x_score = calculate_mac(pattern, x_filter_matrix)
-
-        prediction = determine_winner(
-            cross_score,
-            x_score,
-            label_a="Cross",
-            label_b="X",
-            undecided_label="UNDECIDED",
-        )
-
-        if prediction == expected:
-            result = "PASS"
-            pass_count += 1
-        else:
-            result = "FAIL"
-            fail_count += 1
-            failure_cases.append(
-                f"{pattern_key}: expected={expected}, actual={prediction}"
+            matrices_are_valid = (
+                has_expected_size(pattern, size)
+                and has_expected_size(cross_filter_matrix, size)
+                and has_expected_size(x_filter_matrix, size)
             )
 
-        print(f"--- {pattern_key} ---")
-        print(f"Cross 점수: {cross_score}")
-        print(f"X 점수: {x_score}")
-        print(f"판정: {prediction} | expected: {expected} | {result}")
+            if not matrices_are_valid:
+                fail_count += 1
+                failure_cases.append(
+                    f"{pattern_key}: 필터 또는 패턴 크기 불일치"
+                )
+                print(f"- {pattern_key}: FAIL - 필터 또는 패턴 크기 불일치")
+                continue
+
+            cross_score = calculate_mac(pattern, cross_filter_matrix)
+            x_score = calculate_mac(pattern, x_filter_matrix)
+
+            prediction = determine_winner(
+                cross_score,
+                x_score,
+                label_a="Cross",
+                label_b="X",
+                undecided_label="UNDECIDED",
+            )
+
+            if prediction == expected:
+                result = "PASS"
+                pass_count += 1
+            else:
+                result = "FAIL"
+                fail_count += 1
+                failure_cases.append(
+                    f"{pattern_key}: expected={expected}, actual={prediction}"
+                )
+
+            print(f"--- {pattern_key} ---")
+            print(f"Cross 점수: {cross_score}")
+            print(f"X 점수: {x_score}")
+            print(f"판정: {prediction} | expected: {expected} | {result}")
+
+        except (KeyError, TypeError, ValueError) as error:
+            fail_count += 1
+            failure_cases.append(
+                f"{pattern_key}: 데이터 형식 오류 ({error})"
+            )
+            print(
+                f"- {pattern_key}: FAIL - 데이터 형식 오류 ({error})"
+            )
 
     print()
     print("=== 결과 요약 ===")
