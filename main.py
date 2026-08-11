@@ -105,19 +105,26 @@ def run_json_analysis_mode():
     print(f"패턴: {len(patterns)}개")
 
 def main():
-    print("=== Mini NPU Simulator ===")
-    print("[모드 선택]")
-    print("1. 사용자 입력 (3x3)")
-    print("2. data.json 분석")
+    while True:
+        print("=== Mini NPU Simulator ===")
+        print("[모드 선택]")
+        print("1. 사용자 입력 (3x3)")
+        print("2. data.json 분석")
+        print("0. 종료")
 
-    choice = input("선택: ")
+        choice = input("선택: ")
 
-    if choice == "1":
-        run_user_input_mode()
-    elif choice == "2":
-        run_json_analysis_mode()
-    else:
-        print("입력 오류: 1 또는 2를 선택하세요.")
+        if choice == "1":
+            run_user_input_mode()
+        elif choice == "2":
+            run_json_analysis_mode()
+        elif choice == "0":
+            print("프로그램을 종료합니다.")
+            break
+        else:
+            print("입력 오류: 0, 1, 2 중 하나를 선택하세요.")
+
+        print()
 
 assert calculate_mac(cross_filter, cross_filter) == 5
 assert calculate_mac(cross_filter, x_filter) == 1
