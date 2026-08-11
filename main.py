@@ -156,6 +156,11 @@ def run_json_analysis_mode():
     print(f"필터 크기: {len(filters)}개")
     print(f"패턴: {len(patterns)}개")
 
+    total_count = len(patterns)
+    pass_count = 0
+    fail_count = 0
+    failure_cases = []
+
     for pattern_key, pattern_data in patterns.items():
         size = extract_size_from_pattern_key(pattern_key)
         expected = normalize_label(pattern_data["expected"])
@@ -164,6 +169,10 @@ def run_json_analysis_mode():
         selected_filters = filters.get(filter_size_key)
 
         if selected_filters is None:
+            fail_count += 1
+            failure_cases.append(
+                f"{pattern_key}: 필터를 찾을 수 없음"
+            )
             print(f"- {pattern_key}: FAIL - 필터를 찾을 수 없음")
             continue
 
@@ -184,6 +193,10 @@ def run_json_analysis_mode():
         )
 
         if not matrices_are_valid:
+            fail_count += 1
+            failure_cases.append(
+                f"{pattern_key}: 필터 또는 패턴 크기 불일치"
+            )
             print(f"- {pattern_key}: FAIL - 필터 또는 패턴 크기 불일치")
             continue
 
@@ -200,13 +213,31 @@ def run_json_analysis_mode():
 
         if prediction == expected:
             result = "PASS"
+            pass_count += 1
         else:
             result = "FAIL"
+            fail_count += 1
+            failure_cases.append(
+                f"{pattern_key}: expected={expected}, actual={prediction}"
+            )
 
         print(f"--- {pattern_key} ---")
         print(f"Cross 점수: {cross_score}")
         print(f"X 점수: {x_score}")
         print(f"판정: {prediction} | expected: {expected} | {result}")
+
+    print()
+    print("=== 결과 요약 ===")
+    print(f"총 패턴: {total_count}")
+    print(f"PASS: {pass_count}")
+    print(f"FAIL: {fail_count}")
+
+    if failure_cases:
+        print()
+        print("[실패 사례]")
+
+        for failure_case in failure_cases:
+            print(f"- {failure_case}")
 
 def main():
     while True:
