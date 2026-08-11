@@ -1,4 +1,5 @@
 import json
+import time
 
 cross_filter = [
     [0, 1, 0],
@@ -23,6 +24,29 @@ def calculate_mac(pattern, filter_matrix):
             )
 
     return score
+
+def measure_mac_performance(size, repeat_count=1000):
+    test_pattern = [
+        [1.0 for _ in range(size)]
+        for _ in range(size)
+    ]
+    test_filter = [
+        [1.0 for _ in range(size)]
+        for _ in range(size)
+    ]
+
+    start_time = time.perf_counter()
+
+    for _ in range(repeat_count):
+        calculate_mac(test_pattern, test_filter)
+
+    end_time = time.perf_counter()
+
+    elapsed_seconds = end_time - start_time
+    average_seconds = elapsed_seconds / repeat_count
+    average_milliseconds = average_seconds * 1000
+
+    return average_milliseconds
 
 def read_row(size):
     while True:
