@@ -122,6 +122,22 @@ def extract_size_from_pattern_key(pattern_key):
 
     return int(key_parts[1])
 
+def has_expected_size(matrix, expected_size):
+    if not isinstance(matrix, list):
+        return False
+
+    if len(matrix) != expected_size:
+        return False
+
+    for row in matrix:
+        if not isinstance(row, list):
+            return False
+
+        if len(row) != expected_size:
+            return False
+
+    return True
+
 def run_json_analysis_mode():
     print("=== data.json 분석 모드 ===")
 
@@ -137,9 +153,30 @@ def run_json_analysis_mode():
         size = extract_size_from_pattern_key(pattern_key)
         expected = normalize_label(pattern_data["expected"])
 
+        filter_size_key = f"size_{size}"
+        selected_filters = filters.get(filter_size_key)
+
+        if selected_filters is None:
+            print(f"- {pattern_key}: FAIL - 필터를 찾을 수 없음")
+            continue
+
+        pattern = pattern_data["input"]
+        cross_filter_matrix = selected_filters.get("cross")
+        x_filter_matrix = selected_filters.get("x")
+
+        matrices_are_valid = (
+            has_expected_size(pattern, size)
+            and has_expected_size(cross_filter_matrix, size)
+            and has_expected_size(x_filter_matrix, size)
+        )
+
+        if not matrices_are_valid:
+            print(f"- {pattern_key}: FAIL - 필터 또는 패턴 크기 불일치")
+            continue
+
         print(
             f"- {pattern_key}: {size}x{size}, "
-            f"expected={expected}"
+            f"expected={expected}, size-check=PASS"
         )
 
 def main():
@@ -176,6 +213,14 @@ assert normalize_label(" X ") == "X"
 assert extract_size_from_pattern_key("size_5_1") == 5
 assert extract_size_from_pattern_key("size_13_2") == 13
 assert extract_size_from_pattern_key("size_25_1") == 25
+assert has_expected_size(
+    [[0, 1], [1, 0]],
+    2,
+)
+assert not has_expected_size(
+    [[0, 1], [1]],
+    2,
+)
 
 if __name__ == "__main__":
     main()
