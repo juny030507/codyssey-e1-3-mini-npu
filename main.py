@@ -1,4 +1,5 @@
 import json
+import time
 
 cross_filter = [
     [0, 1, 0],
@@ -23,6 +24,50 @@ def calculate_mac(pattern, filter_matrix):
             )
 
     return score
+
+def measure_mac_performance(size, repeat_count=1000):
+    test_pattern = [
+        [1.0 for _ in range(size)]
+        for _ in range(size)
+    ]
+    test_filter = [
+        [1.0 for _ in range(size)]
+        for _ in range(size)
+    ]
+
+    start_time = time.perf_counter()
+
+    for _ in range(repeat_count):
+        calculate_mac(test_pattern, test_filter)
+
+    end_time = time.perf_counter()
+
+    elapsed_seconds = end_time - start_time
+    average_seconds = elapsed_seconds / repeat_count
+    average_milliseconds = average_seconds * 1000
+
+    return average_milliseconds
+
+def run_performance_analysis():
+    sizes = [3, 5, 13, 25]
+    repeat_count = 1000
+
+    print()
+    print("=== 성능 분석 ===")
+    print(f"반복 횟수: {repeat_count}")
+
+    for size in sizes:
+        average_milliseconds = measure_mac_performance(
+            size,
+            repeat_count,
+        )
+
+        print(
+            f"- {size}x{size}: "
+            f"평균 {average_milliseconds:.6f} ms"
+        )
+
+    print("시간 복잡도: O(N²)")
 
 def read_row(size):
     while True:
@@ -256,6 +301,8 @@ def run_json_analysis_mode():
             print(
                 f"- {pattern_key}: FAIL - 데이터 형식 오류 ({error})"
             )
+
+    run_performance_analysis()
 
     print()
     print("=== 결과 요약 ===")
