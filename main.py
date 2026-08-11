@@ -1,3 +1,5 @@
+import json
+
 cross_filter = [
     [0, 1, 0],
     [1, 1, 1],
@@ -87,10 +89,41 @@ def run_user_input_mode():
     print(f"B 점수: {score_b}")
     print(f"판정: {winner}")
 
+def load_json_data(file_path):
+    with open(file_path, "r", encoding="utf-8") as json_file:
+        return json.load(json_file)
+
+def run_json_analysis_mode():
+    print("=== data.json 분석 모드 ===")
+
+    data = load_json_data("data.json")
+    filters = data["filters"]
+    patterns = data["patterns"]
+
+    print("data.json 로드 완료")
+    print(f"필터 크기: {len(filters)}개")
+    print(f"패턴: {len(patterns)}개")
+
+def main():
+    print("=== Mini NPU Simulator ===")
+    print("[모드 선택]")
+    print("1. 사용자 입력 (3x3)")
+    print("2. data.json 분석")
+
+    choice = input("선택: ")
+
+    if choice == "1":
+        run_user_input_mode()
+    elif choice == "2":
+        run_json_analysis_mode()
+    else:
+        print("입력 오류: 1 또는 2를 선택하세요.")
+
 assert calculate_mac(cross_filter, cross_filter) == 5
 assert calculate_mac(cross_filter, x_filter) == 1
 assert determine_winner(5.0, 1.0) == "A"
 assert determine_winner(1.0, 5.0) == "B"
 assert determine_winner(0.9, 0.8999999999999999) == "판정 불가"
 
-run_user_input_mode()
+if __name__ == "__main__":
+    main()
