@@ -25,6 +25,31 @@ def calculate_mac(pattern, filter_matrix):
 
     return score
 
+def flatten_matrix(matrix):
+    flat_matrix = []
+
+    for row in matrix:
+        for value in row:
+            flat_matrix.append(value)
+
+    return flat_matrix
+
+def calculate_mac_flat(flat_pattern, flat_filter):
+    if len(flat_pattern) != len(flat_filter):
+        raise ValueError(
+            "패턴과 필터의 길이가 일치해야 합니다."
+        )
+
+    score = 0
+
+    for index in range(len(flat_pattern)):
+        score += (
+            flat_pattern[index]
+            * flat_filter[index]
+        )
+
+    return score
+
 def validate_pattern_size(size):
     if not isinstance(size, int):
         raise TypeError(
@@ -514,6 +539,20 @@ assert determine_winner(
 ) == "UNDECIDED"
 assert generate_cross_pattern(3) == cross_filter
 assert generate_x_pattern(3) == x_filter
+assert flatten_matrix(cross_filter) == [
+    0, 1, 0,
+    1, 1, 1,
+    0, 1, 0,
+]
+flat_cross = flatten_matrix(cross_filter)
+flat_x = flatten_matrix(x_filter)
+
+assert calculate_mac_flat(flat_cross, flat_cross) == 5
+assert calculate_mac_flat(flat_cross, flat_x) == 1
+assert (
+    calculate_mac(cross_filter, x_filter)
+    == calculate_mac_flat(flat_cross, flat_x)
+)
 
 if __name__ == "__main__":
     main()
