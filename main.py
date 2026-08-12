@@ -25,6 +25,64 @@ def calculate_mac(pattern, filter_matrix):
 
     return score
 
+def validate_pattern_size(size):
+    if not isinstance(size, int):
+        raise TypeError(
+            "패턴 크기는 정수여야 합니다."
+        )
+
+    if size <= 0 or size % 2 == 0:
+        raise ValueError(
+            "패턴 크기는 양의 홀수여야 합니다."
+        )
+
+def generate_cross_pattern(size):
+    validate_pattern_size(size)
+
+    center_index = size // 2
+    pattern = []
+
+    for row_index in range(size):
+        row_values = []
+
+        for column_index in range(size):
+            is_cross_position = (
+                row_index == center_index
+                or column_index == center_index
+            )
+
+            if is_cross_position:
+                row_values.append(1)
+            else:
+                row_values.append(0)
+
+        pattern.append(row_values)
+
+    return pattern
+
+def generate_x_pattern(size):
+    validate_pattern_size(size)
+
+    pattern = []
+
+    for row_index in range(size):
+        row_values = []
+
+        for column_index in range(size):
+            is_x_position = (
+                row_index == column_index
+                or row_index + column_index == size - 1
+            )
+
+            if is_x_position:
+                row_values.append(1)
+            else:
+                row_values.append(0)
+
+        pattern.append(row_values)
+
+    return pattern
+
 def measure_mac_average(
     pattern,
     filter_matrix,
@@ -412,6 +470,8 @@ assert determine_winner(
     label_b="X",
     undecided_label="UNDECIDED",
 ) == "UNDECIDED"
+assert generate_cross_pattern(3) == cross_filter
+assert generate_x_pattern(3) == x_filter
 
 if __name__ == "__main__":
     main()
