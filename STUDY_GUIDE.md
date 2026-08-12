@@ -31,7 +31,7 @@
 - Cross 입력 × Cross 필터 점수: `5`
 - Cross 입력 × X 필터 점수: `1`
 - 동점 정책: `abs(score_a - score_b) < 1e-9`
-- 최소 성능 반복 기준: 10회, 이 프로젝트에서는 1,000회 사용
+- 최소 성능 측정 기준: 10회, 이 프로젝트에서는 독립 측정 10회와 각 측정당 MAC 호출 1,000회를 사용
 - README 결과 리포트: 실패 원인과 시간 복잡도를 포함해 최소 10줄 이상
 - 허용 환경: Python 3.8 이상, 표준 라이브러리만 사용
 - 금지 사항: NumPy, pandas 등 외부 라이브러리와 벡터화 연산
@@ -68,7 +68,7 @@
 → 패턴 입력
 → A/B MAC 점수 계산
 → epsilon 기반 판정
-→ MAC 1,000회 평균 시간 측정
+→ MAC 1,000회 호출을 한 세트로 10회 독립 측정한 평균 시간 계산
 → 점수, 시간, 판정 출력
 ```
 
@@ -424,21 +424,28 @@ normalized_key = label.strip().lower()
 ### 10.1 측정 공식
 
 ```python
-start_time = time.perf_counter()
+total_average_milliseconds = 0
 
-for _ in range(repeat_count):
-    calculate_mac(pattern, filter_matrix)
+for _ in range(measurement_count):
+    start_time = time.perf_counter()
 
-end_time = time.perf_counter()
+    for _ in range(repeat_count):
+        calculate_mac(pattern, filter_matrix)
 
-elapsed_seconds = end_time - start_time
-average_seconds = elapsed_seconds / repeat_count
-average_milliseconds = average_seconds * 1000
+    end_time = time.perf_counter()
+    elapsed_seconds = end_time - start_time
+    average_seconds = elapsed_seconds / repeat_count
+    total_average_milliseconds += average_seconds * 1000
+
+average_milliseconds = (
+    total_average_milliseconds / measurement_count
+)
 ```
 
 - `perf_counter()`는 짧은 실행 시간을 측정하기 적합한 고해상도 타이머
 - 전체 경과 시간에서 시작 시간을 뺌
-- 반복 횟수로 나눠 한 번의 평균을 구함
+- 각 세트의 경과 시간을 반복 횟수로 나눠 MAC 한 번의 평균을 구함
+- 독립 측정 세트 10개의 평균을 다시 구해 한 번의 우연한 변동을 줄임
 - 초에 1,000을 곱해 ms로 변환
 
 ### 10.2 왜 반복해서 평균을 구하는가
