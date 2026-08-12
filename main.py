@@ -102,14 +102,8 @@ def measure_mac_average(
     return average_milliseconds
 
 def measure_mac_performance(size, repeat_count=1000):
-    test_pattern = [
-        [1.0 for _ in range(size)]
-        for _ in range(size)
-    ]
-    test_filter = [
-        [1.0 for _ in range(size)]
-        for _ in range(size)
-    ]
+    test_pattern = generate_cross_pattern(size)
+    test_filter = generate_x_pattern(size)
 
     return measure_mac_average(
         test_pattern,
