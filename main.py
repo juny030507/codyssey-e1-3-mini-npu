@@ -126,6 +126,98 @@ def measure_mac_average(
 
     return average_milliseconds
 
+def measure_mac_flat_average(
+    flat_pattern,
+    flat_filter,
+    repeat_count=1000,
+):
+    start_time = time.perf_counter()
+
+    for _ in range(repeat_count):
+        calculate_mac_flat(
+            flat_pattern,
+            flat_filter,
+        )
+
+    end_time = time.perf_counter()
+
+    elapsed_seconds = end_time - start_time
+    average_seconds = elapsed_seconds / repeat_count
+    average_milliseconds = average_seconds * 1000
+
+    return average_milliseconds
+
+def compare_mac_performance(
+    size,
+    repeat_count=1000,
+):
+    pattern = generate_cross_pattern(size)
+    filter_matrix = generate_x_pattern(size)
+
+    flat_pattern = flatten_matrix(pattern)
+    flat_filter = flatten_matrix(filter_matrix)
+
+    two_dimensional_score = calculate_mac(
+        pattern,
+        filter_matrix,
+    )
+    flat_score = calculate_mac_flat(
+        flat_pattern,
+        flat_filter,
+    )
+
+    if two_dimensional_score != flat_score:
+        raise ValueError(
+            "2차원 MAC과 1차원 MAC의 점수가 다릅니다."
+        )
+
+    two_dimensional_time = measure_mac_average(
+        pattern,
+        filter_matrix,
+        repeat_count,
+    )
+    flat_time = measure_mac_flat_average(
+        flat_pattern,
+        flat_filter,
+        repeat_count,
+    )
+
+    return two_dimensional_time, flat_time
+
+def run_mac_optimization_analysis():
+    sizes = [3, 5, 13, 25]
+    repeat_count = 1000
+
+    print()
+    print("=== 2차원/1차원 MAC 성능 비교 ===")
+    print(f"반복 횟수: {repeat_count}")
+    print("크기    | 2차원(ms) | 1차원(ms) | 빠른 방식")
+    print("-" * 48)
+
+    for size in sizes:
+        two_dimensional_time, flat_time = (
+            compare_mac_performance(
+                size,
+                repeat_count,
+            )
+        )
+
+        if two_dimensional_time < flat_time:
+            faster_method = "2차원"
+        elif flat_time < two_dimensional_time:
+            faster_method = "1차원"
+        else:
+            faster_method = "동일"
+
+        size_text = f"{size}x{size}"
+
+        print(
+            f"{size_text:<7} | "
+            f"{two_dimensional_time:>9.6f} | "
+            f"{flat_time:>9.6f} | "
+            f"{faster_method}"
+        )
+
 def measure_mac_performance(size, repeat_count=1000):
     test_pattern = generate_cross_pattern(size)
     test_filter = generate_x_pattern(size)
@@ -163,6 +255,7 @@ def run_performance_analysis():
         )
 
     print("시간 복잡도: O(N²)")
+    run_mac_optimization_analysis()
 
 def read_row(size):
     while True:
