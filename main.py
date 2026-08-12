@@ -172,6 +172,51 @@ def read_matrix(name, size):
 
     return matrix
 
+def read_pattern_size():
+    while True:
+        size_text = input(
+            "패턴 크기 N을 입력하세요(양의 홀수): "
+        )
+
+        try:
+            size = int(size_text)
+        except ValueError:
+            print("입력 오류: 정수만 입력하세요.")
+            continue
+
+        try:
+            validate_pattern_size(size)
+        except ValueError as error:
+            print(f"입력 오류: {error}")
+            continue
+
+        return size
+
+def print_matrix(matrix):
+    for row in matrix:
+        text_values = []
+
+        for value in row:
+            text_values.append(str(value))
+
+        print(" ".join(text_values))
+
+def run_pattern_generator_mode():
+    size = read_pattern_size()
+
+    cross_pattern = generate_cross_pattern(size)
+    x_pattern = generate_x_pattern(size)
+
+    print()
+    print(f"=== 자동 생성 패턴 ({size}x{size}) ===")
+
+    print("[Cross]")
+    print_matrix(cross_pattern)
+
+    print()
+    print("[X]")
+    print_matrix(x_pattern)
+
 def determine_winner(
     score_a,
     score_b,
@@ -414,6 +459,7 @@ def main():
         print("[모드 선택]")
         print("1. 사용자 입력 (3x3)")
         print("2. data.json 분석")
+        print("3. 패턴 자동 생성")
         print("0. 종료")
 
         choice = input("선택: ")
@@ -422,11 +468,13 @@ def main():
             run_user_input_mode()
         elif choice == "2":
             run_json_analysis_mode()
+        elif choice == "3":
+            run_pattern_generator_mode()
         elif choice == "0":
             print("프로그램을 종료합니다.")
             break
         else:
-            print("입력 오류: 0, 1, 2 중 하나를 선택하세요.")
+            print("입력 오류: 0, 1, 2, 3 중 하나를 선택하세요.")
 
         print()
 
