@@ -25,6 +25,24 @@ def calculate_mac(pattern, filter_matrix):
 
     return score
 
+def measure_mac_average(
+    pattern,
+    filter_matrix,
+    repeat_count=1000,
+):
+    start_time = time.perf_counter()
+
+    for _ in range(repeat_count):
+        calculate_mac(pattern, filter_matrix)
+
+    end_time = time.perf_counter()
+
+    elapsed_seconds = end_time - start_time
+    average_seconds = elapsed_seconds / repeat_count
+    average_milliseconds = average_seconds * 1000
+
+    return average_milliseconds
+
 def measure_mac_performance(size, repeat_count=1000):
     test_pattern = [
         [1.0 for _ in range(size)]
@@ -35,18 +53,11 @@ def measure_mac_performance(size, repeat_count=1000):
         for _ in range(size)
     ]
 
-    start_time = time.perf_counter()
-
-    for _ in range(repeat_count):
-        calculate_mac(test_pattern, test_filter)
-
-    end_time = time.perf_counter()
-
-    elapsed_seconds = end_time - start_time
-    average_seconds = elapsed_seconds / repeat_count
-    average_milliseconds = average_seconds * 1000
-
-    return average_milliseconds
+    return measure_mac_average(
+        test_pattern,
+        test_filter,
+        repeat_count,
+    )
 
 def run_performance_analysis():
     sizes = [3, 5, 13, 25]
@@ -55,6 +66,8 @@ def run_performance_analysis():
     print()
     print("=== 성능 분석 ===")
     print(f"반복 횟수: {repeat_count}")
+    print("크기(NxN) | 평균 시간(ms) | 연산 횟수(N²)")
+    print("-" * 41)
 
     for size in sizes:
         average_milliseconds = measure_mac_performance(
@@ -62,9 +75,14 @@ def run_performance_analysis():
             repeat_count,
         )
 
+        operation_count = size * size
+
+        size_text = f"{size}x{size}"
+
         print(
-            f"- {size}x{size}: "
-            f"평균 {average_milliseconds:.6f} ms"
+            f"{size_text:<9} | "
+            f"{average_milliseconds:>13.6f} | "
+            f"{operation_count:>13}"
         )
 
     print("시간 복잡도: O(N²)")
@@ -137,8 +155,29 @@ def run_user_input_mode():
     score_b = calculate_mac(pattern, filter_b)
     winner = determine_winner(score_a, score_b)
 
+    repeat_count = 1000
+
+    average_time_a = measure_mac_average(
+        pattern,
+        filter_a,
+        repeat_count,
+    )
+    average_time_b = measure_mac_average(
+        pattern,
+        filter_b,
+        repeat_count,
+    )
+
+    average_time = (
+        average_time_a + average_time_b
+    ) / 2
+
     print(f"A 점수: {score_a}")
     print(f"B 점수: {score_b}")
+    print(
+        f"연산 시간({repeat_count:,}회 평균): "
+        f"{average_time:.6f} ms"
+    )
     print(f"판정: {winner}")
 
 def load_json_data(file_path):
