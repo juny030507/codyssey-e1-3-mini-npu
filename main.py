@@ -112,44 +112,55 @@ def measure_mac_average(
     pattern,
     filter_matrix,
     repeat_count=1000,
+    measurement_count=10,
 ):
-    start_time = time.perf_counter()
+    total_average_milliseconds = 0
 
-    for _ in range(repeat_count):
-        calculate_mac(pattern, filter_matrix)
+    for _ in range(measurement_count):
+        start_time = time.perf_counter()
 
-    end_time = time.perf_counter()
+        for _ in range(repeat_count):
+            calculate_mac(pattern, filter_matrix)
 
-    elapsed_seconds = end_time - start_time
-    average_seconds = elapsed_seconds / repeat_count
-    average_milliseconds = average_seconds * 1000
+        end_time = time.perf_counter()
 
-    return average_milliseconds
+        elapsed_seconds = end_time - start_time
+        average_seconds = elapsed_seconds / repeat_count
+        average_milliseconds = average_seconds * 1000
+        total_average_milliseconds += average_milliseconds
+
+    return total_average_milliseconds / measurement_count
 
 def measure_mac_flat_average(
     flat_pattern,
     flat_filter,
     repeat_count=1000,
+    measurement_count=10,
 ):
-    start_time = time.perf_counter()
+    total_average_milliseconds = 0
 
-    for _ in range(repeat_count):
-        calculate_mac_flat(
-            flat_pattern,
-            flat_filter,
-        )
+    for _ in range(measurement_count):
+        start_time = time.perf_counter()
 
-    end_time = time.perf_counter()
+        for _ in range(repeat_count):
+            calculate_mac_flat(
+                flat_pattern,
+                flat_filter,
+            )
 
-    elapsed_seconds = end_time - start_time
-    average_seconds = elapsed_seconds / repeat_count
-    average_milliseconds = average_seconds * 1000
+        end_time = time.perf_counter()
 
-    return average_milliseconds
+        elapsed_seconds = end_time - start_time
+        average_seconds = elapsed_seconds / repeat_count
+        average_milliseconds = average_seconds * 1000
+        total_average_milliseconds += average_milliseconds
+
+    return total_average_milliseconds / measurement_count
 
 def compare_mac_performance(
     size,
     repeat_count=1000,
+    measurement_count=10,
 ):
     pattern = generate_cross_pattern(size)
     filter_matrix = generate_x_pattern(size)
@@ -175,11 +186,13 @@ def compare_mac_performance(
         pattern,
         filter_matrix,
         repeat_count,
+        measurement_count,
     )
     flat_time = measure_mac_flat_average(
         flat_pattern,
         flat_filter,
         repeat_count,
+        measurement_count,
     )
 
     return two_dimensional_time, flat_time
@@ -187,10 +200,12 @@ def compare_mac_performance(
 def run_mac_optimization_analysis():
     sizes = [3, 5, 13, 25]
     repeat_count = 1000
+    measurement_count = 10
 
     print()
     print("=== 2차원/1차원 MAC 성능 비교 ===")
-    print(f"반복 횟수: {repeat_count}")
+    print(f"측정 세트: {measurement_count}회")
+    print(f"세트당 반복 횟수: {repeat_count:,}회")
     print("크기    | 2차원(ms) | 1차원(ms) | 빠른 방식")
     print("-" * 48)
 
@@ -199,6 +214,7 @@ def run_mac_optimization_analysis():
             compare_mac_performance(
                 size,
                 repeat_count,
+                measurement_count,
             )
         )
 
@@ -218,7 +234,11 @@ def run_mac_optimization_analysis():
             f"{faster_method}"
         )
 
-def measure_mac_performance(size, repeat_count=1000):
+def measure_mac_performance(
+    size,
+    repeat_count=1000,
+    measurement_count=10,
+):
     test_pattern = generate_cross_pattern(size)
     test_filter = generate_x_pattern(size)
 
@@ -226,15 +246,18 @@ def measure_mac_performance(size, repeat_count=1000):
         test_pattern,
         test_filter,
         repeat_count,
+        measurement_count,
     )
 
 def run_performance_analysis():
     sizes = [3, 5, 13, 25]
     repeat_count = 1000
+    measurement_count = 10
 
     print()
     print("=== 성능 분석 ===")
-    print(f"반복 횟수: {repeat_count}")
+    print(f"측정 세트: {measurement_count}회")
+    print(f"세트당 반복 횟수: {repeat_count:,}회")
     print("크기(NxN) | 평균 시간(ms) | 연산 횟수(N²)")
     print("-" * 41)
 
@@ -242,6 +265,7 @@ def run_performance_analysis():
         average_milliseconds = measure_mac_performance(
             size,
             repeat_count,
+            measurement_count,
         )
 
         operation_count = size * size
@@ -371,16 +395,19 @@ def run_user_input_mode():
     winner = determine_winner(score_a, score_b)
 
     repeat_count = 1000
+    measurement_count = 10
 
     average_time_a = measure_mac_average(
         pattern,
         filter_a,
         repeat_count,
+        measurement_count,
     )
     average_time_b = measure_mac_average(
         pattern,
         filter_b,
         repeat_count,
+        measurement_count,
     )
 
     average_time = (
@@ -390,7 +417,8 @@ def run_user_input_mode():
     print(f"A 점수: {score_a}")
     print(f"B 점수: {score_b}")
     print(
-        f"연산 시간({repeat_count:,}회 평균): "
+        f"연산 시간({measurement_count}개 세트 × "
+        f"{repeat_count:,}회 평균): "
         f"{average_time:.6f} ms"
     )
     print(f"판정: {winner}")
