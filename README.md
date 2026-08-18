@@ -52,6 +52,183 @@ python3 main.py
 
 사용자 입력 모드는 메뉴에서 `1`, JSON 분석 모드는 `2`, 패턴 자동 생성 모드는 `3`, 프로그램 종료는 `0`을 선택한다. JSON 분석 모드를 사용하려면 `data.json`을 `main.py`와 같은 디렉터리에 배치해야 한다.
 
+## 함수 호출 흐름
+
+아래 도식에서 실선 화살표는 함수 호출 또는 다음 처리 단계, 점선 화살표는 처리 결과의 반환을 나타낸다. 각 모드가 끝나면 제어가 `main()`으로 돌아가 메뉴를 다시 출력한다.
+
+### 전체 메뉴 흐름
+
+```mermaid
+flowchart TD
+    A["main() 시작"] --> B{"메뉴 선택"}
+    B -->|"1"| C["run_user_input_mode()"]
+    B -->|"2"| D["run_json_analysis_mode()"]
+    B -->|"3"| E["run_pattern_generator_mode()"]
+    B -->|"0"| F["반복문 종료"]
+    B -->|"그 외"| G["입력 오류 출력"]
+    C --> B
+    D --> B
+    E --> B
+    G --> B
+    F --> H["프로그램 종료"]
+```
+
+`main()`은 프로그램의 진입점이자 전체 흐름을 관리하는 함수다. `while True`로 메뉴를 반복하고, 사용자의 선택에 따라 한 모드 함수를 호출한다. 모드 함수가 반환되면 다시 메뉴 선택 단계로 이동하며, `0`을 선택할 때만 `break`로 반복문을 끝낸다.
+
+### 모드 1: 사용자 입력 모드
+
+```mermaid
+sequenceDiagram
+    actor User as 사용자
+    participant Main as main()
+    participant Mode as run_user_input_mode()
+    participant Matrix as read_matrix()
+    participant Row as read_row()
+    participant MAC as calculate_mac()
+    participant Winner as determine_winner()
+    participant Timer as measure_mac_average()
+
+    User->>Main: 메뉴에서 1 선택
+    Main->>Mode: 사용자 입력 모드 호출
+    Mode->>Matrix: read_matrix("필터 A", 3)
+    Matrix->>Row: read_row(3) × 3행
+    Note right of Row: 잘못된 행은 함수 내부에서<br/>올바를 때까지 다시 입력받음
+    Row-->>Matrix: 행별 숫자 리스트
+    Matrix-->>Mode: filter_a
+    Mode->>Matrix: read_matrix("필터 B", 3)
+    Matrix->>Row: read_row(3) × 3행
+    Row-->>Matrix: 행별 숫자 리스트
+    Matrix-->>Mode: filter_b
+    Mode->>Matrix: read_matrix("패턴", 3)
+    Matrix->>Row: read_row(3) × 3행
+    Row-->>Matrix: 행별 숫자 리스트
+    Matrix-->>Mode: pattern
+    Mode->>MAC: calculate_mac(pattern, filter_a)
+    MAC-->>Mode: score_a
+    Mode->>MAC: calculate_mac(pattern, filter_b)
+    MAC-->>Mode: score_b
+    Mode->>Winner: determine_winner(score_a, score_b)
+    Winner-->>Mode: A, B 또는 판정 불가
+    Mode->>Timer: 필터 A의 평균 연산 시간 측정
+    Timer->>MAC: MAC 10개 세트 × 1,000회 호출
+    Timer-->>Mode: average_time_a
+    Mode->>Timer: 필터 B의 평균 연산 시간 측정
+    Timer->>MAC: MAC 10개 세트 × 1,000회 호출
+    Timer-->>Mode: average_time_b
+    Mode-->>User: 점수, 평균 시간, 판정 출력
+    Mode-->>Main: 호출 종료 후 메뉴로 복귀
+```
+
+`read_matrix()`는 행렬 한 개를 담당하고, 그 안에서 `read_row()`를 세 번 호출한다. 입력이 끝나면 두 필터의 MAC 점수를 구하고 `determine_winner()`로 판정한다. 이후 같은 입력을 `measure_mac_average()`에 전달해 연산 시간도 측정한다.
+
+### 모드 2: JSON 분석 모드
+
+```mermaid
+sequenceDiagram
+    actor User as 사용자
+    participant Main as main()
+    participant Mode as run_json_analysis_mode()
+    participant Loader as load_json_data()
+    participant Key as extract_size_from_pattern_key()
+    participant Label as normalize_label()
+    participant Size as has_expected_size()
+    participant MAC as calculate_mac()
+    participant Winner as determine_winner()
+    participant Perf as run_performance_analysis()
+
+    User->>Main: 메뉴에서 2 선택
+    Main->>Mode: JSON 분석 모드 호출
+    Mode->>Loader: load_json_data("data.json")
+    Loader-->>Mode: data 딕셔너리
+    Note over Mode,Loader: 파일·JSON 문법·필수 구조 오류이면<br/>오류를 출력하고 main()으로 복귀
+
+    loop patterns의 각 패턴
+        Mode->>Key: extract_size_from_pattern_key(pattern_key)
+        Key-->>Mode: 행렬 크기 N
+        Mode->>Label: expected 라벨 정규화
+        Label-->>Mode: Cross 또는 X
+        Mode->>Label: 선택된 필터의 각 라벨 정규화
+        Label-->>Mode: 표준 라벨 Cross 또는 X
+        Mode->>Mode: normalized_filters 구성
+        Mode->>Size: has_expected_size() × 3
+        Size-->>Mode: 유효 여부
+        Mode->>MAC: Cross 점수 계산
+        MAC-->>Mode: cross_score
+        Mode->>MAC: X 점수 계산
+        MAC-->>Mode: x_score
+        Mode->>Winner: 두 점수 판정
+        Winner-->>Mode: Cross, X 또는 UNDECIDED
+        Mode->>Mode: expected와 비교해 PASS/FAIL 집계
+    end
+
+    Mode->>Perf: run_performance_analysis()
+    Perf-->>Mode: 크기별 성능 분석 완료
+    Mode-->>User: 총 PASS/FAIL과 실패 사례 출력
+    Mode-->>Main: 호출 종료 후 메뉴로 복귀
+```
+
+패턴 하나의 데이터 형식이나 크기가 잘못된 경우에는 해당 패턴만 FAIL로 기록하고 다음 반복으로 넘어간다. 모든 패턴 처리가 끝난 뒤 성능 분석을 먼저 출력하고, 마지막에 전체 결과를 요약한다.
+
+#### JSON 모드 안의 성능 분석 호출 흐름
+
+```mermaid
+flowchart TD
+    A["run_performance_analysis()"] --> B{"크기별 반복<br/>3, 5, 13, 25"}
+    B --> C["measure_mac_performance(size)"]
+    C --> D["generate_cross_pattern(size)"]
+    D --> E["generate_x_pattern(size)"]
+    E --> F["measure_mac_average()"]
+    F --> G["크기별 평균 시간과 N² 출력"]
+    G --> B
+    B -->|"모든 크기 완료"| H["run_mac_optimization_analysis()"]
+    H --> I{"크기별 반복<br/>3, 5, 13, 25"}
+    I --> J["compare_mac_performance(size)"]
+    J --> K["generate_cross_pattern() →<br/>generate_x_pattern()"]
+    K --> L["flatten_matrix() × 2"]
+    L --> M["calculate_mac()과<br/>calculate_mac_flat() 점수 검증"]
+    M --> N["measure_mac_average()"]
+    N --> O["measure_mac_flat_average()"]
+    O --> P["2차원/1차원 시간 반환 및 출력"]
+    P --> I
+    I -->|"모든 크기 완료"| Q["run_json_analysis_mode()로 반환"]
+```
+
+`run_performance_analysis()`은 일반 2차원 MAC의 크기별 시간을 측정한 다음 `run_mac_optimization_analysis()`을 호출한다. 최적화 분석에서는 동일한 입력으로 2차원과 1차원 MAC 점수가 같은지 먼저 검증한 후 두 구현의 시간만 비교한다.
+
+### 모드 3: 패턴 자동 생성 모드
+
+```mermaid
+sequenceDiagram
+    actor User as 사용자
+    participant Main as main()
+    participant Mode as run_pattern_generator_mode()
+    participant Reader as read_pattern_size()
+    participant Validator as validate_pattern_size()
+    participant Cross as generate_cross_pattern()
+    participant X as generate_x_pattern()
+    participant Printer as print_matrix()
+
+    User->>Main: 메뉴에서 3 선택
+    Main->>Mode: 패턴 자동 생성 모드 호출
+    Mode->>Reader: read_pattern_size()
+    Reader->>Reader: 입력 문자열을 int로 변환
+    Reader->>Validator: validate_pattern_size(size)
+    Note over Reader,Validator: int 변환 실패 또는 크기 검증 실패이면<br/>오류 출력 후 Reader가 다시 입력받음
+    Validator-->>Reader: 유효한 크기 확인
+    Reader-->>Mode: size
+    Mode->>Cross: generate_cross_pattern(size)
+    Cross->>Validator: 크기 재검증
+    Cross-->>Mode: cross_pattern
+    Mode->>X: generate_x_pattern(size)
+    X->>Validator: 크기 재검증
+    X-->>Mode: x_pattern
+    Mode->>Printer: print_matrix(cross_pattern)
+    Mode->>Printer: print_matrix(x_pattern)
+    Mode-->>Main: 출력 완료 후 메뉴로 복귀
+```
+
+`read_pattern_size()`는 입력 단계에서 크기를 검사하고, 두 생성 함수도 독립적으로 안전하게 사용할 수 있도록 내부에서 크기를 다시 검사한다. 생성된 Cross와 X 행렬은 `print_matrix()`를 통해 한 행씩 출력한다.
+
 ## 동점 처리 정책
 
 사용자 입력 모드와 JSON 분석 모드는 모두 두 점수의 차이가 `1e-9`보다 작으면 동점으로 보는 같은 epsilon 규칙을 사용한다. 사용자 입력 모드는 사용자가 직접 입력한 필터 A/B를 한국어 대화형 화면에서 비교하므로 동점을 `판정 불가`로 표현한다. JSON 분석 모드는 표준 라벨 `Cross`/`X`를 사용하는 일괄 분석 결과이므로 지시 문서의 출력 규칙에 맞춰 `UNDECIDED`로 표현한다. 즉 동점을 판단하는 계산 정책은 같고, 모드의 입력 이름과 출력 용도에 맞춰 표시 문자열만 다르다.
